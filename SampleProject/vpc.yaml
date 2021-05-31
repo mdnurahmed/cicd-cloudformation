@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  myvpcBlock :
+      Type : String 
+      Default: 10.0.0.0/16
+      Description: vpc cidr range 
+  
+  mySubnet01block :
+      Type : String 
+      Default: 10.0.1.0/24
+      Description: subnet 01 cidr range 
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label :
+          default: dev vpc vonfig 
+          Parameters:
+            - myvpcBlock
+            - mySubnet01block 
+    ParameterLabels:
+      myvpcBlock : 
+        default : vpc cidr range de 
+
+
+Resources:
+  myvpc :
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: !Ref myvpcBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: 
+        - Key : 'Purpose'
+          Value : 'Fun'
+
+  mySubnet01:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select ['0',!GetAZs '']
+      CidrBlock: !Ref mySubnet01block
+      Tags: 
+        - Key : Purpose_Subnet
+          Value : 'i dont know what i am doing '
+      VpcId: !Ref myvpc
+
+
+  myroutetable:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      Tags: 
+        - Key : Purpose_routetable
+          Value : 'this is taking too long'
+      VpcId: !Ref myvpc
+
+  mySubnetRouteTableAss:  
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref myroutetable
+      SubnetId: !Ref mySubnet01 
+  
+  myInternetGateWay:
+    Type: AWS::EC2::InternetGateway
+  
+  myvpcIGWattachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      InternetGatewayId: !Ref myInternetGateWay
+      VpcId: !Ref myvpc
+
+  myRoute:
+    DependsOn : myvpcIGWattachment
+    Type: AWS::EC2::Route
+    Properties: 
+      RouteTableId: !Ref myroutetable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref myInternetGateWay
+
+
+
+Outputs:
+  mySubnet01:
+    Description : subnet 01 id 
+    Value : !Ref mySubnet01
+  
+  myvpc : 
+    Description : vpc id 
+    Value : !Ref myvpc
